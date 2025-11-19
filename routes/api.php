@@ -7,6 +7,7 @@ use App\Http\Controllers\API\BlogController;
 use App\Http\Controllers\API\GalleryController;
 use App\Http\Controllers\API\EcomapController;
 use App\Http\Controllers\API\DesaController;
+use App\Http\Controllers\API\UserController;
 
 // TEMPORARY: Test Desa tanpa auth
 Route::post('/desas-test', [DesaController::class, 'store']);
@@ -47,4 +48,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/ecomaps', [EcomapController::class, 'store']);
     Route::put('/ecomaps/{id}', [EcomapController::class, 'update']);
     Route::delete('/ecomaps/{id}', [EcomapController::class, 'destroy']);
+});
+
+// Admin Only Routes
+Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+    // User Management
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::post('/users', [UserController::class, 'store']);
+    Route::put('/users/{id}', [UserController::class, 'update']);
+    Route::delete('/users/{id}', [UserController::class, 'destroy']);
+    Route::post('/users/{id}/toggle-active', [UserController::class, 'toggleActive']);
+    Route::post('/users/{id}/reset-password', [UserController::class, 'resetPassword']);
 });
