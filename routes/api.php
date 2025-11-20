@@ -9,10 +9,6 @@ use App\Http\Controllers\API\EcomapController;
 use App\Http\Controllers\API\DesaController;
 use App\Http\Controllers\API\UserController;
 
-// TEMPORARY: Test Desa tanpa auth
-Route::post('/desas-test', [DesaController::class, 'store']);
-Route::get('/desas-test', [DesaController::class, 'index']);
-
 // Public Routes
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -28,17 +24,23 @@ Route::get('/desas/{id}', [DesaController::class, 'show']);
 Route::get('/ecomaps', [EcomapController::class, 'index']);
 Route::get('/ecomaps/{id}', [EcomapController::class, 'show']);
 
-// Protected Routes
+// Protected Routes - SEMUA YANG LOGIN
 Route::middleware('auth:sanctum')->group(function () {
+    // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
 
+    // Profile - untuk semua user
+    Route::put('/profile', [UserController::class, 'updateProfile']);
+    Route::put('/profile/password', [UserController::class, 'updatePassword']);
+
+    // CRUD lainnya...
     Route::post('/blogs', [BlogController::class, 'store']);
-    Route::post('/blogs/{id}', [BlogController::class, 'update']);
+    Route::put('/blogs/{id}', [BlogController::class, 'update']);
     Route::delete('/blogs/{id}', [BlogController::class, 'destroy']);
 
     Route::post('/galleries', [GalleryController::class, 'store']);
-    Route::post('/galleries/{id}', [GalleryController::class, 'update']);
+    Route::put('/galleries/{id}', [GalleryController::class, 'update']);
     Route::delete('/galleries/{id}', [GalleryController::class, 'destroy']);
 
     Route::post('/desas', [DesaController::class, 'store']);
@@ -48,11 +50,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/ecomaps', [EcomapController::class, 'store']);
     Route::put('/ecomaps/{id}', [EcomapController::class, 'update']);
     Route::delete('/ecomaps/{id}', [EcomapController::class, 'destroy']);
-});
 
-// Admin Only Routes
-Route::middleware(['auth:sanctum', 'admin'])->group(function () {
-    // User Management
+    // USER MANAGEMENT - Manual authorization di Controller
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/{id}', [UserController::class, 'show']);
     Route::post('/users', [UserController::class, 'store']);
@@ -60,4 +59,12 @@ Route::middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::delete('/users/{id}', [UserController::class, 'destroy']);
     Route::post('/users/{id}/toggle-active', [UserController::class, 'toggleActive']);
     Route::post('/users/{id}/reset-password', [UserController::class, 'resetPassword']);
+});
+
+// TEMPORARY TEST ONLY
+Route::post('/desas-test', [DesaController::class, 'store']);
+Route::get('/desas-test', [DesaController::class, 'index']);
+
+Route::fallback(function () {
+    return response()->json(['message' => 'Endpoint tidak ditemukan.'], 404);
 });

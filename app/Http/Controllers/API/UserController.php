@@ -68,35 +68,48 @@ class UserController extends Controller
     // Update User (Admin only)
     public function update(Request $request, $id)
     {
-        $user = User::find($id);
+        try {
+            $user = User::find($id);
 
-        if (!$user) {
-            return response()->json(['message' => 'User tidak ditemukan'], 404);
+            if (!$user) {
+                return response()->json(['message' => 'User tidak ditemukan'], 404);
+            }
+
+            $validatedData = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email,' . $id,
+                'password' => 'nullable|string|min:8',
+                'role' => 'required|in:admin,fasilitator',
+                'is_active' => 'boolean',
+            ]);
+
+            $user->name = $validatedData['name'];
+            $user->email = $validatedData['email'];
+            $user->role = $validatedData['role'];
+            $user->is_active = $validatedData['is_active'] ?? true;
+
+            // Only update password if provided
+            if (!empty($validatedData['password'])) {
+                $user->password = Hash::make($validatedData['password']);
+            }
+
+            $user->save();
+
+            return response()->json([
+                'message' => 'User berhasil diupdate',
+                'data' => $user
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validasi gagal',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Gagal mengupdate user',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $id,
-            'password' => 'nullable|string|min:8',
-            'role' => 'required|in:admin,fasilitator',
-            'is_active' => 'boolean',
-        ]);
-
-        $user->name = $request->name;
-        $user->email = $request->email;
-        $user->role = $request->role;
-        $user->is_active = $request->is_active ?? true;
-
-        if ($request->password) {
-            $user->password = Hash::make($request->password);
-        }
-
-        $user->save();
-
-        return response()->json([
-            'message' => 'User berhasil diupdate',
-            'data' => $user
-        ]);
     }
 
     // Delete User (Admin only)
@@ -157,5 +170,65 @@ class UserController extends Controller
         return response()->json([
             'message' => 'Password user berhasil direset'
         ]);
+    }
+
+    // 👇 TAMBAHKAN 2 METHOD BARU INI
+
+    // Update Profile Sendiri (untuk semua user yang login)
+    public function updateProfile(Request $request)
+    {
+        try {
+            $validatedData = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|unique:users,email,' . auth()->id(),
+            ]);
+
+            $user = User::findOrFail(auth()->id());
+            $user->update($validatedData);
+
+            return response()->json([
+                'message' => 'Profil berhasil diperbarui',
+                'data' => $user->fresh()
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validasi gagal',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Gagal memperbarui profil',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Update Password Sendiri (untuk semua user yang login)
+    public function updatePassword(Request $request)
+    {
+        try {
+            $request->validate([
+                'new_password' => 'required|string|min:8',
+            ]);
+
+            $user = User::findOrFail(auth()->id());
+            $user->update([
+                'password' => Hash::make($request->new_password)
+            ]);
+
+            return response()->json([
+                'message' => 'Password berhasil diubah'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validasi gagal',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Gagal mengubah password',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

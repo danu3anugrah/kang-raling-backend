@@ -9,7 +9,7 @@ class AdminMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (!$request->user() || !$request->user()->isAdmin()) {
+        if (!$request->user() || $request->user()->role !== 'admin') {
             return response()->json([
                 'message' => 'Akses ditolak. Hanya admin yang bisa mengakses fitur ini.'
             ], 403);
